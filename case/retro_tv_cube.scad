@@ -126,6 +126,7 @@ MCU_USBC_Z = MCU_Z_POS + NN_PCB_T / 2;
 
 /* ── 헬퍼 모듈 / Helper modules ─────────────────────────── */
 $fn_def = 32;
+EPSILON = 0.001;  // hull() 무한소 슬라이스용 두께 [mm]
 
 // 2D 둥근 직사각형
 module rrect(w, h, r) {
@@ -322,6 +323,8 @@ module main_body() {
                         max(0.5, CORNER_R_BACK - WALL));
 
         // ── 스냅 그루브 (장변 ±Y 벽, 페이스플레이트 스냅 혀에 맞는 홈) ──
+        //    스냅핏: 조립 위치 정렬 및 1차 고정 역할
+        //    최종 체결은 4코너 M2 나사(히트인서트)로 보강
         snap_groove_z = 1.5;
         for (side = [-1, 1])
             for (i = [0 : NUM_SNAPS - 1]) {
@@ -380,11 +383,11 @@ module main_body() {
             translate([-(NN_W / 2) - MCU_GUIDE_WALL,
                        MCU_FLOOR_Y_F,
                        MCU_Z_POS])
-                cube([NN_W + 2 * MCU_GUIDE_WALL, MCU_PAD_H, 0.001]);
+                cube([NN_W + 2 * MCU_GUIDE_WALL, MCU_PAD_H, EPSILON]);
             translate([-(NN_W / 2) - MCU_GUIDE_WALL,
-                       MCU_GUIDE_BASE_Y - 0.001,
+                       MCU_GUIDE_BASE_Y - EPSILON,
                        MCU_Z_POS + MCU_GUIDE_ZDEPTH])
-                cube([NN_W + 2 * MCU_GUIDE_WALL, 0.001, 0.001]);
+                cube([NN_W + 2 * MCU_GUIDE_WALL, EPSILON, EPSILON]);
         }
 
     // ㄷ 가이드 (3면: 좌측 레일, 우측 레일, 후면 벽)
