@@ -196,6 +196,18 @@ module bottom_shell() {
                         translate([cx, cy, 0])
                             cylinder(d = 2.4, h = 1.5, $fn = 16);
             }
+
+            // ── Nice!Nano MCU guide rails ────────────────────────
+            // Rectangular frame around the MCU footprint to prevent
+            // lateral movement during use.
+            translate([-INNER_W / 2 + NN_SEAT_X - 1.0,
+                       -INNER_H / 2 + NN_SEAT_Y - 1.0,
+                        FLOOR])
+                difference() {
+                    cube([NN_W + 2.0, NN_H + 2.0, 3.0]);
+                    translate([1.0, 1.0, -0.1])
+                        cube([NN_W, NN_H, 3.2]);
+                }
         }
 
         // ── Inner cavity ────────────────────────────────────────

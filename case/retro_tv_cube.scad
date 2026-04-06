@@ -69,6 +69,10 @@ BACK_WALL     =  2.5;   // 후면 벽 두께      [mm]
 TOLERANCE     =  0.25;  // 스냅핏 클리어런스  [mm]
 SCREEN_CLR    =  0.4;   // 화면 윈도우 클리어런스 [mm]
 
+/* ── MCU 가이드 파라미터 / MCU guide parameters ─────────────── */
+MCU_GUIDE_WALL =  1.0;  // 가이드 레일 벽 두께 [mm]
+MCU_GUIDE_H    =  3.0;  // 가이드 레일 높이    [mm]
+
 /* ── 스냅핏 파라미터 / Snap-fit parameters ───────────────── */
 SNAP_INSET    =  8.0;   // 직선 벽 구간 깊이 (스냅핏 존) [mm]
 SNAP_W        =  6.0;   // 스냅 탭 폭        [mm]
@@ -155,6 +159,10 @@ module face_plate() {
     // 스냅 혀 Z 위치 (스커트 시작부터 측정, 주 바디 개구부 기준 1.5 mm)
     tongue_z = 1.5;
 
+    // 디스플레이 PCB 코너 포스트 위치 (내면 기준)
+    disp_x0_fp = -INNER_W / 2 + (INNER_W - DISP_PCB_W) / 2;
+    disp_y0_fp = -INNER_H / 2 + (INNER_H - DISP_PCB_H) / 2;
+
     difference() {
         union() {
             // ① 전면 판 (큰 베젤 포함, FACE_W × FACE_H × FACE_T)
@@ -183,16 +191,24 @@ module face_plate() {
                                 snap_tongue();
                     }
             }
+
+            // ④ 디스플레이 PCB 코너 포스트 (페이스플레이트 내면, 화면 고정)
+            //    전면 판 안쪽에 작은 기둥 4개 → PCB 코너를 잡아줌
+            translate([disp_x0_fp, disp_y0_fp, FACE_T])
+                for (cx = [0.5, DISP_PCB_W - 0.5])
+                    for (cy = [0.5, DISP_PCB_H - 0.5])
+                        translate([cx, cy, 0])
+                            cylinder(d = 2.0, h = 1.5, $fn = 16);
         }
 
-        // ④ 화면 윈도우 (전면 판 관통)
+        // ⑤ 화면 윈도우 (전면 판 관통)
         translate([0, 0, -0.1])
             linear_extrude(FACE_T + 0.2)
                 rrect(DISP_ACTIVE_W + 2 * SCREEN_CLR,
                       DISP_ACTIVE_H + 2 * SCREEN_CLR,
                       2.5);
 
-        // ⑤ 화면 내측 챔퍼 (브라운관 TV의 화면 오목 느낌)
+        // ⑥ 화면 내측 챔퍼 (브라운관 TV의 화면 오목 느낌)
         //    전면 판 뒤면에서 안쪽으로 경사를 넣어 깊이감을 줌
         translate([0, 0, FACE_T])
             hull() {
@@ -286,24 +302,28 @@ module main_body() {
                 cylinder(d = 2.5, h = WALL + 0.2, $fn = 16);
     }
 
-    // ── 디스플레이 PCB 코너 포스트 ──────────────────────────────
-    //    디스플레이 PCB(39 × 31.5 mm)가 개구부 바로 아래 안착
-    disp_x0 = -INNER_W / 2 + (INNER_W - DISP_PCB_W) / 2;
-    disp_y0 = -INNER_H / 2 + (INNER_H - DISP_PCB_H) / 2;
-    translate([disp_x0, disp_y0, SNAP_INSET])
-        for (cx = [0.5, DISP_PCB_W - 0.5])
-            for (cy = [0.5, DISP_PCB_H - 0.5])
-                translate([cx, cy, 0])
-                    cylinder(d = 2.0, h = 1.5, $fn = 16);
-
-    // ── 나이스나노 마운팅 포스트 ────────────────────────────────
+    // ── 나이스나노 마운팅 포스트 + MCU 가이드 레일 ──────────────────
+    //    포스트: 나이스나노 PCB를 바닥에서 들어올림 (조립 틈새 확보)
+    //    가이드: 직사각형 프레임이 PCB 측면을 감싸 횡방향 유동 방지
     translate([-INNER_W / 2 + NN_SEAT_X,
                -INNER_H / 2 + NN_SEAT_Y,
-               NN_POST_Z])
+               NN_POST_Z]) {
+        // 코너 포스트
         for (cx = [1, NN_W - 1])
             for (cy = [1, NN_H - 1])
                 translate([cx, cy, 0])
                     cylinder(d = 2.4, h = 1.5, $fn = 16);
+
+        // 가이드 레일 (MCU 사방을 감싸는 직사각형 벽)
+        translate([-MCU_GUIDE_WALL, -MCU_GUIDE_WALL, 0])
+            difference() {
+                cube([NN_W + 2 * MCU_GUIDE_WALL,
+                      NN_H + 2 * MCU_GUIDE_WALL,
+                      MCU_GUIDE_H]);
+                translate([MCU_GUIDE_WALL, MCU_GUIDE_WALL, -0.1])
+                    cube([NN_W, NN_H, MCU_GUIDE_H + 0.2]);
+            }
+    }
 }
 
 /* ── 렌더링 / Render ─────────────────────────────────────── */
