@@ -71,10 +71,14 @@ The case splits into **two snap-fit shells**:
 
 ```
 case/
-├── case.scad               # OpenSCAD parametric source (edit & export here)
-├── preview_both.png        # Render: both parts
-├── preview_top_shell.png   # Render: top shell
-└── preview_bottom_shell.png# Render: bottom shell
+├── case.scad               # OpenSCAD parametric source – original flat-box design
+├── retro_tv_cube.scad      # OpenSCAD – 레트로 브라운관 TV 큐브 케이스 (신규)
+│                           #   tapered CRT-TV body, thick bezel, back USB-C port
+├── fusion_retro_tv.py      # Fusion 360 Python API script – same design, Fusion native
+│                           #   Run: Tools → Scripts and Add-Ins → Add(+) → select file
+├── preview_both.png        # Render: both parts (original)
+├── preview_top_shell.png   # Render: top shell (original)
+└── preview_bottom_shell.png# Render: bottom shell (original)
 ```
 
 ---
@@ -131,6 +135,75 @@ Key parameters:
 | `NN_H` | 18.3 | Nice!Nano PCB height mm |
 | `WALL` | 2.0 | Shell wall thickness mm |
 | `TOLERANCE` | 0.25 | Fit clearance per side mm |
+
+---
+
+## 레트로 브라운관 TV 케이스 / Retro CRT-TV Cube Case
+
+### 새 파일 / New files
+
+| 파일 | 설명 |
+|------|------|
+| `case/retro_tv_cube.scad` | OpenSCAD 파라메트릭 소스 |
+| `case/fusion_retro_tv.py` | Fusion 360 Python API 스크립트 |
+
+### 형태 특징 / Shape features
+
+```
+         ┌──────────────────────────────────┐
+         │  ╔══════════════════╗            │  ← 두꺼운 전면 베젤
+         │  ║  ST7789 screen   ║  FACE PLATE│    (CRT TV 느낌)
+         │  ╚══════════════════╝            │
+         └──────────────────────────────────┘
+                    ↕  snap-fit
+         ┌────────────────────────────────┐
+        /                                  \
+       /     Main Body (전자부품 수납)       \  ← 전면 → 후면 테이퍼
+      /   ┌──────────────────────────────┐   \   (브라운관 실루엣)
+     /    │   Nice!Nano v2 + Display PCB  │    \
+    └─────┴──────────────────────────────┴─────┘
+                       [USB-C] ← 후면 중앙
+```
+
+- **페이스플레이트** (Part 1): 52 × 48 mm, 화면 윈도우 + 내측 챔퍼 + 스냅핏 스커트
+- **메인 바디** (Part 2): 전면 46 × 42 mm → 후면 40 × 36 mm 테이퍼, 깊이 36 mm
+- **USB-C 슬롯**: 후면 벽 중앙 (Nice!Nano v2 충전/플래시용)
+- **발**: 하단 좌우 2개 (레트로 TV 스타일)
+- **LED 창**: 우측 측면 Φ2.5 mm
+
+### Fusion 360 사용 방법 / How to use the Fusion 360 script
+
+```
+1. Autodesk Fusion 360 실행
+2. Tools → Scripts and Add-Ins (단축키: Shift+S)
+3. Scripts 탭 → (+) 버튼 → fusion_retro_tv.py 선택
+4. Run 클릭
+5. 두 개의 바디(Main_Body, Face_Plate)가 생성됨
+6. 각 바디를 우클릭 → Save As Mesh(.STL) 또는 Export(.STEP)
+```
+
+### OpenSCAD 내보내기 / Exporting STL from OpenSCAD
+
+```bash
+# Install OpenSCAD: https://openscad.org/downloads.html
+
+# Export face plate (Part 1)
+openscad -D 'SHOW=1' -o face_plate.stl case/retro_tv_cube.scad
+
+# Export main body (Part 2)
+openscad -D 'SHOW=2' -o main_body.stl case/retro_tv_cube.scad
+```
+
+### 주요 파라미터 / Key parameters  (`retro_tv_cube.scad`)
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `FACE_W` / `FACE_H` | 52 / 48 mm | 페이스플레이트 크기 |
+| `BODY_OPEN_W` / `BODY_OPEN_H` | 46 / 42 mm | 메인 바디 개구부 크기 |
+| `BACK_W` / `BACK_H` | 40 / 36 mm | 후면 크기 (테이퍼 결정) |
+| `BODY_DEPTH` | 36 mm | 케이스 깊이 |
+| `WALL` | 2.5 mm | 벽 두께 |
+| `BEZEL` (= `(FACE_W - BODY_OPEN_W)/2`) | 3 mm | 베젤 오버행 폭 |
 
 ---
 
