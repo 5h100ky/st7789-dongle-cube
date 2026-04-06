@@ -2,22 +2,24 @@
 // ST7789 Dongle – Retro CRT-TV Cube Case  (retro_tv_cube.scad)
 // ============================================================
 //
-// 레트로 브라운관 TV 스타일 2파트 스냅핏 케이스
-// Retro CRT-TV styled two-part snap-fit enclosure for:
+// 레트로 브라운관 TV 스타일 2파트 나사 체결 케이스
+// Retro CRT-TV styled two-part screw-fastened enclosure for:
 //   • ST7789 1.69" display (landscape, 39 × 31.5 mm PCB)
-//   • Nice!Nano v2 (34.1 × 18.3 mm, USB-C on top edge)
+//   • Nice!Nano v2 (34.1 × 18.3 mm, USB-C on bottom edge)
 //
 // 형태 특징 / Shape features:
 //   • 전면 페이스플레이트가 메인 바디보다 큼 (CRT 베젤 오버행)
 //   • 메인 바디가 전면(넓음) → 후면(좁음)으로 테이퍼됨 (브라운관 실루엣)
 //   • 두꺼운 전면 베젤 + 화면 내측 챔퍼 (브라운관 느낌)
-//   • 후면 중앙에 USB-C 포트 슬롯
+//   • 하단 벽에 USB-C 포트 슬롯 (MCU 수직 장착)
 //   • 하단 좌우에 레트로 TV 스타일 발
 //   • 측면에 LED 창
+//   • 메인 바디 4 코너에 M2 히트인서트 → 페이스플레이트 나사 체결
 //
 // 파트 구성 / Parts:
-//   Part 1 – Face plate   : 화면 베젤 + 윈도우 + 내부 스커트(스냅핏)
-//   Part 2 – Main body    : 전자부품 수납 + 테이퍼드 케이스 + 후면 USB-C
+//   Part 1 – Face plate   : 화면 베젤 + 윈도우 + 내부 스커트 + M2 카운터싱크
+//   Part 2 – Main body    : 전자부품 수납 + 테이퍼드 케이스 + 하단 USB-C
+//                           + M2 히트인서트 보스 + MCU ㄷ가이드
 //
 // 출력 방향 / Print orientation:
 //   Face plate → 전면(화면)을 빌드 플레이트 쪽으로 (face-down)
@@ -39,6 +41,7 @@ DISP_ACTIVE_H = 27.97;  // 화면 활성 영역 높이 [mm]
 
 NN_W          = 34.1;   // 나이스나노 PCB 폭  [mm]
 NN_H          = 18.3;   // 나이스나노 PCB 높이 [mm]
+NN_PCB_T      = 1.6;    // 나이스나노 PCB 두께 [mm]
 NN_TOTAL_T    = 3.2;    // 나이스나노 총 높이 (USB-C 포함) [mm]
 NN_USBC_W     = 9.5;    // USB-C 리셉터클 폭  [mm]
 NN_USBC_H     = 3.5;    // USB-C 리셉터클 높이 [mm]
@@ -71,7 +74,17 @@ SCREEN_CLR    =  0.4;   // 화면 윈도우 클리어런스 [mm]
 
 /* ── MCU 가이드 파라미터 / MCU guide parameters ─────────────── */
 MCU_GUIDE_WALL =  1.0;  // 가이드 레일 벽 두께 [mm]
-MCU_GUIDE_H    =  3.0;  // 가이드 레일 높이    [mm]
+MCU_GUIDE_H    =  4.0;  // 가이드 레일 높이    [mm]
+MCU_Z_POS      = 11.0;  // MCU 수직 장착 Z 위치 (개구부로부터) [mm]
+
+/* ── 히트인서트 & 나사 파라미터 / Heat-insert & screw parameters ─
+       M2 히트인서트, OD 3.5 mm                                   */
+HI_OD     =  3.5;   // 히트인서트 외경 [mm]
+HI_DEPTH  =  4.0;   // 히트인서트 홀 깊이 [mm]
+BOSS_D    =  6.0;   // 보스 외경 [mm]
+BOSS_H    =  6.5;   // 보스 높이 [mm]
+SCREW_D   =  2.4;   // M2 클리어런스 홀 직경 [mm]
+CS_D      =  4.5;   // 카운터싱크 상단 직경 [mm]
 
 /* ── 스냅핏 파라미터 / Snap-fit parameters ───────────────── */
 SNAP_INSET    =  8.0;   // 직선 벽 구간 깊이 (스냅핏 존) [mm]
@@ -86,18 +99,34 @@ INNER_W  = BODY_OPEN_W - 2 * WALL;         // ~41 mm
 INNER_H  = BODY_OPEN_H - 2 * WALL;         // ~37 mm
 INNER_D  = BODY_DEPTH  - BACK_WALL;        // usable depth
 
-// 나이스나노 시트 오프셋
-NN_SEAT_X = (INNER_W - NN_W) / 2;
-NN_SEAT_Y = (INNER_H - NN_H) / 2;
+// 보스 코너 위치: 메인 바디 개구부 외벽 중심 (±X, ±Y)
+// 이 위치는 내부 캐비티 경계(±INNER_W/2, ±INNER_H/2) 바깥 외벽에 속함
+BOSS_CX = BODY_OPEN_W / 2 - 2.0;   // = 21.0 mm
+BOSS_CY = BODY_OPEN_H / 2 - 2.0;   // = 19.0 mm
 
-// 나이스나노 마운팅 포스트 Z (디스플레이 아래 5 mm 간격)
-NN_POST_Z = SNAP_INSET + DISP_PCB_T + 0.4 + 5.0;
+// MCU 가이드 Z 깊이 (PCB 두께 + 클리어런스 + 후면 벽)
+MCU_GUIDE_ZDEPTH = NN_PCB_T + TOLERANCE + MCU_GUIDE_WALL;
 
-// USB-C 구멍 중심 Z (내부 후면 벽 앞, 나이스나노 높이 중앙)
-USBC_Z = BODY_DEPTH - BACK_WALL / 2;
+// 경사진 내부 바닥 Y 위치 함수 (테이퍼 구간)
+// Z=SNAP_INSET → -(INNER_H/2),  Z=BODY_DEPTH-BACK_WALL → -(BACK_H-2*WALL)/2
+function inner_floor_y(z) =
+    (z <= SNAP_INSET)
+        ? -(INNER_H / 2)
+        : -(INNER_H / 2) + (INNER_H / 2 - (BACK_H - 2 * WALL) / 2) *
+          (z - SNAP_INSET) / (BODY_DEPTH - BACK_WALL - SNAP_INSET);
+
+// MCU 가이드 기준 Y (경사 보정 후 수평 기준면 = 가이드 후단 바닥 높이)
+MCU_FLOOR_Y_F    = inner_floor_y(MCU_Z_POS);
+MCU_FLOOR_Y_B    = inner_floor_y(MCU_Z_POS + MCU_GUIDE_ZDEPTH);
+MCU_PAD_H        = MCU_FLOOR_Y_B - MCU_FLOOR_Y_F;   // 수평 패드 높이 차 (쐐기)
+MCU_GUIDE_BASE_Y = MCU_FLOOR_Y_B;                   // 가이드 바닥 Y (수평)
+
+// USB-C 구멍 Z 중심 (MCU PCB 두께 중앙)
+MCU_USBC_Z = MCU_Z_POS + NN_PCB_T / 2;
 
 /* ── 헬퍼 모듈 / Helper modules ─────────────────────────── */
 $fn_def = 32;
+EPSILON = 0.001;  // hull() 무한소 슬라이스용 두께 [mm]
 
 // 2D 둥근 직사각형
 module rrect(w, h, r) {
@@ -221,6 +250,17 @@ module face_plate() {
                         rrect(DISP_ACTIVE_W + 2 * SCREEN_CLR + 6.0,
                               DISP_ACTIVE_H + 2 * SCREEN_CLR + 6.0, 4.0);
             }
+
+        // ⑦ M2 나사 카운터싱크 홀 (4 코너, 히트인서트 체결용)
+        //    메인 바디 히트인서트 보스 위치와 동일 (±BOSS_CX, ±BOSS_CY)
+        for (sx = [-1, 1], sy = [-1, 1])
+            translate([sx * BOSS_CX, sy * BOSS_CY, -0.1]) {
+                // M2 클리어런스 관통 홀
+                cylinder(d = SCREW_D, h = FACE_T + 0.2, $fn = 20);
+                // 카운터싱크 (전면에서 깔대기 형)
+                cylinder(d1 = CS_D, d2 = SCREW_D,
+                         h = (CS_D - SCREW_D) / 2 + 0.1, $fn = 20);
+            }
     }
 }
 
@@ -229,8 +269,12 @@ module face_plate() {
    ══════════════════════════════════════════════════════════
    전자부품 수납 + 테이퍼드 CRT TV 바디.
    Z=0: 개구부(페이스플레이트가 부착되는 면)
-   Z=BODY_DEPTH: 후면(USB-C 포트가 있는 면)
-   출력: 개구부가 위를 향하게 (open-side up).           */
+   Z=BODY_DEPTH: 후면
+   출력: 개구부가 위를 향하게 (open-side up).
+   나이스나노 장착 방향:
+     • PCB 수직 기립 (XY 평면, Z=MCU_Z_POS)
+     • USB-C 에지가 하단(-Y 벽) 쪽을 향함 → 하단 벽에 USB-C 구멍
+     • ㄷ 가이드가 바닥에서 PCB 3면(좌·우·뒤)을 감쌈 (앞 개구부 방향 열림) */
 module main_body() {
     difference() {
         union() {
@@ -254,6 +298,13 @@ module main_body() {
                            BODY_DEPTH - 4])
                     rotate([-90, 0, 0])
                         cylinder(d = 10, h = 4, $fn = 32);
+
+            // ④ 히트인서트 보스 (4 코너 외벽, M2 OD 3.5 mm)
+            //    개구부 면(Z=0)에서 내부로 BOSS_H 만큼 돌출
+            //    위치: 외벽 중앙 (BOSS_CX, BOSS_CY) – 내부 캐비티 바깥
+            for (sx = [-1, 1], sy = [-1, 1])
+                translate([sx * BOSS_CX, sy * BOSS_CY, 0])
+                    cylinder(d = BOSS_D, h = BOSS_H, $fn = 20);
         }
 
         // ── 내부 캐비티 ──────────────────────────────────────
@@ -272,7 +323,8 @@ module main_body() {
                         max(0.5, CORNER_R_BACK - WALL));
 
         // ── 스냅 그루브 (장변 ±Y 벽, 페이스플레이트 스냅 혀에 맞는 홈) ──
-        //    개구부에서 tongue_z=1.5mm 위치에 홈 형성
+        //    스냅핏: 조립 위치 정렬 및 1차 고정 역할
+        //    최종 체결은 4코너 M2 나사(히트인서트)로 보강
         snap_groove_z = 1.5;
         for (side = [-1, 1])
             for (i = [0 : NUM_SNAPS - 1]) {
@@ -285,14 +337,17 @@ module main_body() {
                           SNAP_H + SNAP_CATCH + 0.8]);
             }
 
-        // ── USB-C 포트 구멍 (후면 벽 중앙) ──────────────────────
-        //    나이스나노 USB-C가 이 구멍을 통해 접근 가능
-        translate([0, 0, USBC_Z - 0.1])
-            hull()
-                for (dx = [-1, 1])
-                    translate([dx * (NN_USBC_W / 2 - NN_USBC_H / 2), 0, 0])
-                        cylinder(d = NN_USBC_H + 2 * TOLERANCE,
-                                 h = BACK_WALL + 0.2, $fn = 20);
+        // ── USB-C 포트 구멍 (하단 벽 중앙, 바닥으로 이동) ────────────
+        //    나이스나노가 수직 기립하여 USB-C 에지가 하단(-Y 벽)을 향함.
+        //    구멍은 -Y 외벽을 +Y 방향으로 관통.
+        //    MCU_USBC_Z: PCB 두께 중앙 Z 위치
+        translate([0, -(BODY_OPEN_H / 2) - 0.5, MCU_USBC_Z])
+            rotate([-90, 0, 0])
+                hull()
+                    for (dx = [-1, 1])
+                        translate([dx * (NN_USBC_W / 2 - NN_USBC_H / 2), 0, 0])
+                            cylinder(d = NN_USBC_H + 2 * TOLERANCE,
+                                     h = WALL + 2.0, $fn = 16);
 
         // ── LED 창 (우측 측면 벽) ─────────────────────────────
         translate([BODY_OPEN_W / 2 - 0.1,
@@ -300,29 +355,52 @@ module main_body() {
                    SNAP_INSET + NN_TOTAL_T / 2 + 6])
             rotate([0, 90, 0])
                 cylinder(d = 2.5, h = WALL + 0.2, $fn = 16);
+
+        // ── 히트인서트 홀 (보스 중심, Z=0에서 HI_DEPTH 깊이) ─────────
+        for (sx = [-1, 1], sy = [-1, 1])
+            translate([sx * BOSS_CX, sy * BOSS_CY, -0.1])
+                cylinder(d = HI_OD, h = HI_DEPTH + 0.1, $fn = 20);
     }
 
-    // ── 나이스나노 마운팅 포스트 + MCU 가이드 레일 ──────────────────
-    //    포스트: 나이스나노 PCB를 바닥에서 들어올림 (조립 틈새 확보)
-    //    가이드: 직사각형 프레임이 PCB 측면을 감싸 횡방향 유동 방지
-    translate([-INNER_W / 2 + NN_SEAT_X,
-               -INNER_H / 2 + NN_SEAT_Y,
-               NN_POST_Z]) {
-        // 코너 포스트
-        for (cx = [1, NN_W - 1])
-            for (cy = [1, NN_H - 1])
-                translate([cx, cy, 0])
-                    cylinder(d = 2.4, h = 1.5, $fn = 16);
+    // ── MCU 수평 패드 + ㄷ 가이드 ───────────────────────────────────
+    //
+    // 메인 바디가 테이퍼로 인해 내부 바닥(-Y 면)이 앞→뒤로 경사짐.
+    // 수평 패드(쐐기형)가 이 경사를 보정하여 가이드 기준면을 수평으로 만듦.
+    //
+    // 나이스나노 장착 방향:
+    //   • PCB 폭(NN_W=34.1mm) → X 축 중앙
+    //   • PCB 높이(NN_H=18.3mm) → +Y 방향 (기립)
+    //   • PCB 두께(NN_PCB_T=1.6mm) → Z 방향 (MCU_Z_POS 위치)
+    //   • USB-C 에지: 하단(-Y), MCU_GUIDE_BASE_Y 수준
+    //
+    // ㄷ 가이드 형상 (개구부(-Z) 방향으로 열린 U채널):
+    //   좌측 레일 | 후면 벽 | 우측 레일
+    //   PCB를 위에서 아래로 삽입 후 개구부에서 지지
 
-        // 가이드 레일 (MCU 사방을 감싸는 직사각형 벽)
-        translate([-MCU_GUIDE_WALL, -MCU_GUIDE_WALL, 0])
-            difference() {
-                cube([NN_W + 2 * MCU_GUIDE_WALL,
-                      NN_H + 2 * MCU_GUIDE_WALL,
-                      MCU_GUIDE_H]);
-                translate([MCU_GUIDE_WALL, MCU_GUIDE_WALL, -0.1])
-                    cube([NN_W, NN_H, MCU_GUIDE_H + 0.2]);
-            }
+    // 수평 패드 (쐐기형, 전단이 높고 후단에서 0이 됨)
+    if (MCU_PAD_H > 0.01)
+        hull() {
+            translate([-(NN_W / 2) - MCU_GUIDE_WALL,
+                       MCU_FLOOR_Y_F,
+                       MCU_Z_POS])
+                cube([NN_W + 2 * MCU_GUIDE_WALL, MCU_PAD_H, EPSILON]);
+            translate([-(NN_W / 2) - MCU_GUIDE_WALL,
+                       MCU_GUIDE_BASE_Y - EPSILON,
+                       MCU_Z_POS + MCU_GUIDE_ZDEPTH])
+                cube([NN_W + 2 * MCU_GUIDE_WALL, EPSILON, EPSILON]);
+        }
+
+    // ㄷ 가이드 (3면: 좌측 레일, 우측 레일, 후면 벽)
+    translate([0, MCU_GUIDE_BASE_Y, MCU_Z_POS]) {
+        // 좌측 레일
+        translate([-(NN_W / 2) - MCU_GUIDE_WALL, 0, 0])
+            cube([MCU_GUIDE_WALL, MCU_GUIDE_H, MCU_GUIDE_ZDEPTH]);
+        // 우측 레일
+        translate([NN_W / 2, 0, 0])
+            cube([MCU_GUIDE_WALL, MCU_GUIDE_H, MCU_GUIDE_ZDEPTH]);
+        // 후면 벽 (ㄷ의 닫힌 면, PCB +Z 측 스톱퍼)
+        translate([-(NN_W / 2) - MCU_GUIDE_WALL, 0, NN_PCB_T + TOLERANCE])
+            cube([NN_W + 2 * MCU_GUIDE_WALL, MCU_GUIDE_H, MCU_GUIDE_WALL]);
     }
 }
 
