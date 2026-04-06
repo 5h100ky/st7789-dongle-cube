@@ -65,6 +65,10 @@ SNAP_CATCH      = 0.7;    // undercut depth   [mm]
 SNAP_H          = 4.0;    // snap tab height  [mm]
 NUM_SNAPS       = 2;      // snaps on each long side
 
+// MCU guide rail parameters / MCU 가이드 파라미터
+MCU_GUIDE_WALL  = 1.0;    // guide rail wall thickness [mm]
+MCU_GUIDE_H     = 3.0;    // guide rail height         [mm]
+
 /* ── Derived dimensions / 파생 치수 ─────────────────────────── */
 // Cavity is sized for the display PCB (widest component in W direction)
 INNER_W = max(DISP_PCB_W, NN_W) + 2 * (TOLERANCE + 0.5); // ~42 mm
@@ -200,13 +204,15 @@ module bottom_shell() {
             // ── Nice!Nano MCU guide rails ────────────────────────
             // Rectangular frame around the MCU footprint to prevent
             // lateral movement during use.
-            translate([-INNER_W / 2 + NN_SEAT_X - 1.0,
-                       -INNER_H / 2 + NN_SEAT_Y - 1.0,
+            translate([-INNER_W / 2 + NN_SEAT_X - MCU_GUIDE_WALL,
+                       -INNER_H / 2 + NN_SEAT_Y - MCU_GUIDE_WALL,
                         FLOOR])
                 difference() {
-                    cube([NN_W + 2.0, NN_H + 2.0, 3.0]);
-                    translate([1.0, 1.0, -0.1])
-                        cube([NN_W, NN_H, 3.2]);
+                    cube([NN_W + 2 * MCU_GUIDE_WALL,
+                          NN_H + 2 * MCU_GUIDE_WALL,
+                          MCU_GUIDE_H]);
+                    translate([MCU_GUIDE_WALL, MCU_GUIDE_WALL, -0.1])
+                        cube([NN_W, NN_H, MCU_GUIDE_H + 0.2]);
                 }
         }
 
