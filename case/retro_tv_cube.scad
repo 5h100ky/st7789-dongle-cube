@@ -94,6 +94,17 @@ SNAP_CATCH    =  0.7;   // 언더컷 깊이        [mm]
 SNAP_H        =  4.0;   // 스냅 탭 높이       [mm]
 NUM_SNAPS     =  2;     // 장변 당 스냅 수
 
+/* ── 전술 스위치 파라미터 / Tactile switch parameters ───── */
+// Standard 6 × 6 mm tact switch; 4 mm actuator hole fits actuator cap.
+TAC_HOLE_D    =  4.0;   // actuator hole diameter [mm]
+TAC_Z         = 15.0;   // button Z position from front opening [mm]
+TAC_Y_OFFSET  =  7.0;   // vertical offset ±Y from center [mm]
+
+/* ── APDS9930 센서 홀 / APDS9930 sensor aperture ─────────── */
+SENSOR_D      =  5.0;   // sensor aperture hole diameter [mm]
+SENSOR_X      =  0.0;   // sensor X position (centred) [mm]
+SENSOR_Z      = 18.0;   // sensor hole Z position from front opening [mm]
+
 /* ── 내부 치수 (파생) / Derived internal dimensions ────────── */
 INNER_W  = BODY_OPEN_W - 2 * WALL;         // ~41 mm
 INNER_H  = BODY_OPEN_H - 2 * WALL;         // ~37 mm
