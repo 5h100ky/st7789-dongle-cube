@@ -98,6 +98,13 @@ NUM_SNAPS     =  2;     // 장변 당 스냅 수
 // Standard 6 × 6 mm tact switch; 4 mm actuator hole fits actuator cap.
 TAC_HOLE_D    =  4.0;   // actuator hole diameter [mm]
 TAC_Z         = 15.0;   // button Z position from front opening [mm]
+
+/* ── LEGO 스터드 파라미터 / LEGO-style stud parameters ─────
+       LEGO 표준 스터드를 그대로 사용하여 사실감 있는 외관 구현      */
+STUD_D     =  4.8;   // 스터드 외경 [mm]  (LEGO 표준 ≈ 4.8 mm)
+STUD_H     =  1.8;   // 스터드 높이 [mm]  (LEGO 표준 ≈ 1.8 mm)
+STUD_PITCH =  8.0;   // 스터드 중심 간격 [mm]  (LEGO 표준 피치 = 8 mm)
+STUD_FN    = 24;     // 스터드 원통 분할 수 (부드러운 원)
 TAC_Y_OFFSET  =  7.0;   // vertical offset ±Y from center [mm]
 
 /* ── APDS9930 센서 홀 / APDS9930 sensor aperture ─────────── */
@@ -167,6 +174,19 @@ module tapered_box(w_f, h_f, w_b, h_b, d, r_f, r_b) {
             linear_extrude(height = 0.001)
                 rrect(w_b, h_b, r_b);
     }
+}
+
+// LEGO 스터드 격자: area_w × area_h 범위 안에 STUD_PITCH 간격으로 원기둥 배치.
+// 격자는 XY 중앙 정렬되며, 스터드는 Z=0 → Z=STUD_H 방향으로 돌출.
+// 호출 전 translate([0,0, surface_z]) 로 시작면 지정.
+module lego_stud_grid(area_w, area_h) {
+    cols = floor((area_w - STUD_D) / STUD_PITCH) + 1;
+    rows = floor((area_h - STUD_D) / STUD_PITCH) + 1;
+    x0   = -(cols - 1) * STUD_PITCH / 2;
+    y0   = -(rows - 1) * STUD_PITCH / 2;
+    for (c = [0 : cols - 1], r = [0 : rows - 1])
+        translate([x0 + c * STUD_PITCH, y0 + r * STUD_PITCH, 0])
+            cylinder(d = STUD_D, h = STUD_H, $fn = STUD_FN);
 }
 
 // 스냅 혀 (+X 방향으로 돌출, SNAP_W 만큼 Z 방향 압출)
@@ -239,6 +259,24 @@ module face_plate() {
                     for (cy = [0.5, DISP_PCB_H - 0.5])
                         translate([cx, cy, 0])
                             cylinder(d = 2.0, h = 1.5, $fn = 16);
+
+            // ⑧ 전면 베젤 LEGO 스터드 (화면 윈도우·보스 영역 제외)
+            //    스터드가 외면(Z=0)에서 -Z 방향으로 STUD_H 만큼 돌출.
+            //    내부 difference 로 화면 창과 나사 보스 반경 영역을 잘라냄.
+            translate([0, 0, -STUD_H])
+                difference() {
+                    lego_stud_grid(FACE_W, FACE_H);
+                    // 화면 윈도우 영역 + 스터드 반지름 클리어런스
+                    translate([0, 0, -0.1])
+                        linear_extrude(STUD_H + 0.2)
+                            rrect(DISP_ACTIVE_W + 2 * SCREEN_CLR + STUD_D,
+                                  DISP_ACTIVE_H + 2 * SCREEN_CLR + STUD_D,
+                                  3.0);
+                    // M2 카운터싱크 + 스터드 반지름 클리어런스
+                    for (sx = [-1, 1], sy = [-1, 1])
+                        translate([sx * BOSS_CX, sy * BOSS_CY, -0.1])
+                            cylinder(d = CS_D + STUD_D, h = STUD_H + 0.3, $fn = 24);
+                }
         }
 
         // ⑤ 화면 윈도우 (전면 판 관통)
@@ -316,6 +354,11 @@ module main_body() {
             for (sx = [-1, 1], sy = [-1, 1])
                 translate([sx * BOSS_CX, sy * BOSS_CY, 0])
                     cylinder(d = BOSS_D, h = BOSS_H, $fn = 20);
+
+            // ⑤ 후면 LEGO 스터드 (후면 평면 전체에 격자 배치)
+            //    메인 바디 후면(Z=BODY_DEPTH) 밖으로 STUD_H 만큼 돌출.
+            translate([0, 0, BODY_DEPTH])
+                lego_stud_grid(BACK_W, BACK_H);
         }
 
         // ── 내부 캐비티 ──────────────────────────────────────
